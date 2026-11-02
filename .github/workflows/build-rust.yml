@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -45,3 +45,20 @@ jobs:
           path: |
             mod.wasm
             zoom-wasm-e7614d2.zip
+
+      # Pushes made with GITHUB_TOKEN do not start another workflow run, so
+      # this does not loop. It also avoids the artifact download host, which
+      # is not reachable from the Arena sandbox.
+      - name: Commit Rust artifacts to this branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mod.wasm zoom-wasm-e7614d2.zip
+          if git diff --staged --quiet; then
+            echo "Rust artifacts already current"
+          else
+            git commit -m "Build Rust mod.wasm via GitHub Actions [skip ci]"
+            git push origin HEAD:arena/5504635e-zoom
+          fi
