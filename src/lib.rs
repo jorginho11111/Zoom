@@ -95,19 +95,22 @@ impl Zoom {
     }
 
     fn cycle_level(&mut self) {
-        let i = LEVELS
-            .iter()
-            .position(|&l| (l - self.level).abs() < 0.0001)
-            .unwrap_or(0);
-        let next = (i + 1) % LEVELS.len();
+        let i = LEVELS.iter().position(|&l| (l - self.level).abs() < 0.0001);
+        let next = match i {
+            Some(i) => (i + 1) % LEVELS.len(),
+            None => 0,
+        };
         self.set_level(LEVELS[next], LEVELS[next].to_string());
         self.save();
         self.page();
     }
 
     fn cycle_key(&mut self) {
-        let i = KEYS.iter().position(|&k| k == self.key).unwrap_or(0);
-        let next = (i + 1) % KEYS.len();
+        let i = KEYS.iter().position(|&k| k == self.key.as_str());
+        let next = match i {
+            Some(i) => (i + 1) % KEYS.len(),
+            None => 0,
+        };
         let _ = self.set_key(KEYS[next]);
     }
 

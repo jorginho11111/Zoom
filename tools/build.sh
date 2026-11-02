@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 rustup target add wasm32-unknown-unknown
-cargo build --lib --target wasm32-unknown-unknown \
+cargo build -p zoom --lib --target wasm32-unknown-unknown \
   --message-format=json-render-diagnostics --release
 CORE="$ROOT/target/wasm32-unknown-unknown/release/zoom.wasm"
 cargo run --release -p componentize -- "$CORE" "$ROOT/mod.wasm"

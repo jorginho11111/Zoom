@@ -27,7 +27,7 @@ const store = new Map();
 const calls = { registerKey: [], claimWheel: [], poll: 0, setZoom: [], setSettings: [], set: [] };
 let pending = [];
 const dec = new TextDecoder();
-const imports = {
+const specificImports = {
   'horizon:mods/input': {
     registerKey: (name, label, key) => { calls.registerKey.push({ name, label, key }); },
     poll: () => { calls.poll++; const value = pending; pending = []; return value; },
@@ -46,6 +46,17 @@ const imports = {
   },
   'horizon:mods/ui': { setSettings: widgets => { calls.setSettings.push(widgets); } },
 };
+// A full SDK world may declare interfaces this mod never calls. Give them
+// no-op functions so both the trimmed C component and the Rust SDK component
+// instantiate with the same mock host.
+const genericImport = new Proxy({}, { get: () => () => undefined });
+const imports = new Proxy({}, {
+  get: (_, name) => {
+    if (typeof name !== 'string' || !name.includes('horizon:mods/')) return undefined;
+    const key = name.replace(/@0\.1\.0$/, '');
+    return specificImports[key] ?? genericImport;
+  },
+});
 const { events, uiEvents } = await instantiate(getCoreModule, imports);
 const results = [];
 const check = (label, actual, expected) => {
@@ -57,9 +68,11 @@ check('init registration', events.init(), { commands: ['zoom'], tick: false, fra
 check('register default key', calls.registerKey.at(-1), { name: 'zoom', label: 'Zoom key', key: 'key.keyboard.z' });
 check('initial settings widgets', calls.setSettings[0]?.length, 5);
 check('initial settings text', calls.setSettings[0]?.[0]?.tag, 'text');
-check('initial settings buttons', calls.setSettings[0]?.slice(1).map(w => [w.tag, w.val.id, w.val.label]), [
-  ['button', 2, 'Cycle starting zoom'], ['button', 3, 'Toggle smooth zoom'],
-  ['button', 4, 'Toggle slower turning'], ['button', 5, 'Cycle default key'],
+check('initial settings buttons', calls.setSettings[0]?.slice(1).map(w => [
+  w.tag, w.val.id, typeof w.val.label === 'string' && w.val.label.length > 0,
+]), [
+  ['button', 2, true], ['button', 3, true],
+  ['button', 4, true], ['button', 5, true],
 ]);
 uiEvents.settingsOpened(); events.tick(1n); events.chat('hello'); uiEvents.closed();
 

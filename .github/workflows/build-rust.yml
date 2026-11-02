@@ -1,0 +1,47 @@
+name: Build Rust WASM Zoom (Horizon e7614d2)
+
+on:
+  push:
+    branches: [arena/5504635e-zoom]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust stable + wasm32-unknown-unknown
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS verification tools
+        run: npm ci
+
+      - name: Build Rust core and componentize with wit-component
+        run: bash tools/build.sh
+
+      - name: Mock-host behavior checks
+        run: npm test
+
+      - name: Upload Rust component + zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: zoom-rust-e7614d2
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            mod.wasm
+            zoom-wasm-e7614d2.zip
