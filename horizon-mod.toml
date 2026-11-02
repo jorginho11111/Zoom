@@ -1,0 +1,9 @@
+id = "zoom"
+name = "Zoom (WI-Zoom)"
+version = "1.0.0"
+description = "Hold a configurable key to zoom; wheel changes the level while held, with proportionally reduced turn sensitivity."
+authors = []
+api = "0.1"
+side = "client"
+capabilities = ["render", "input", "ui", "storage"]
+experimental = ["render", "input", "ui"]

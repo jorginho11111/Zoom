@@ -1,0 +1,23 @@
+[package]
+name = "zoom"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+description = "WI-Zoom-style Horizon WASM mod for revision e7614d2 (horizon:mods@0.1.0)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+horizon-mod-sdk = { path = "vendor/horizon-mod-sdk" }
+
+[workspace]
+members = ["tools/componentize"]
+exclude = ["vendor/horizon-mod-sdk"]
+resolver = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"

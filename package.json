@@ -1,0 +1,19 @@
+{
+  "name": "zoom-wasm-e7614d2",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Horizon WI-Zoom-style WASM component fixed to revision e7614d2 (horizon:mods@0.1.0)",
+  "scripts": {
+    "build:core": "bash tools/build-core.sh",
+    "build:js": "node tools/build-componentize-js.mjs",
+    "verify": "node tools/verify.mjs mod.wasm",
+    "test": "node tools/test-host.mjs",
+    "package": "python3 tools/package.py"
+  },
+  "dependencies": {
+    "@bytecodealliance/componentize-js": "0.23.0",
+    "@bytecodealliance/jco": "1.41.0",
+    "@bytecodealliance/jco-transpile": "0.23.0"
+  }
+}

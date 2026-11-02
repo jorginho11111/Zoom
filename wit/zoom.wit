@@ -1,0 +1,95 @@
+package horizon:mods@0.1.0;
+
+interface storage {
+    get: func(key: string) -> option<list<u8>>;
+    set: func(key: string, value: list<u8>) -> result<_, string>;
+}
+
+interface input {
+    record held-item {
+        id: string,
+        count: u32,
+        slot: u32,
+    }
+    record item-use {
+        item: held-item,
+        ticks: u32,
+    }
+    variant event {
+        use-start(item-use),
+        use-stop(item-use),
+        key-down(string),
+        key-up(string),
+        wheel(f32),
+    }
+    register-key: func(name: string, label: string, key: string) -> result<_, string>;
+    poll: func() -> list<event>;
+    claim-wheel: func(on: bool);
+}
+
+interface render {
+    record zoom {
+        factor: f32,
+        smooth: bool,
+        turn: f32,
+    }
+    set-zoom: func(zoom: zoom);
+}
+
+interface ui {
+    record text-widget {
+        id: u32,
+        text: string,
+        color: u32,
+    }
+    record item-widget {
+        id: u32,
+        item: string,
+        name: string,
+    }
+    record list-widget {
+        id: u32,
+        rows: list<string>,
+        selected: option<u32>,
+    }
+    record button-widget {
+        id: u32,
+        label: string,
+    }
+    variant widget {
+        text(text-widget),
+        button(button-widget),
+        item(item-widget),
+        %list(list-widget),
+    }
+    set-settings: func(widgets: list<widget>);
+}
+
+interface events {
+    record registration {
+        commands: list<string>,
+        tick: bool,
+        frame: bool,
+        chat: bool,
+    }
+    init: func() -> result<registration, string>;
+    tick: func(tick: u64);
+    frame: func(seconds: f32);
+    command: func(name: string, args: string) -> result<option<string>, string>;
+    chat: func(text: string);
+}
+
+interface ui-events {
+    select: func(id: u32, row: u32);
+    closed: func();
+    settings-opened: func();
+}
+
+world zoom-mod {
+    import input;
+    import render;
+    import storage;
+    import ui;
+    export events;
+    export ui-events;
+}

@@ -1,0 +1,6 @@
+.arena/
+node_modules/
+target/
+transpiled/
+zig/*.wasm
+zig/*.wat
