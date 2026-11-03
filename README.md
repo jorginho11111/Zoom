@@ -23,7 +23,7 @@ mod.wasm
 O `horizon-mod.toml` usa `id = "zoom"`, `api = "0.1"`, `side = "client"`,
 `capabilities = ["render", "input", "ui", "storage"]` e
 `experimental = ["render", "input", "ui"]`, conforme exigido pelo
-`Manifest::parse` da revisão fixada. O `mod.wasm` tem 25.670 bytes.
+`Manifest::parse` da revisão fixada. O `mod.wasm` final tem **82.133 bytes** e é o componente Rust gerado pelo GitHub Actions; `sha256` `2c42139debf9e121e744e252542524bbe9adbb72bb50b5e518d288f7a1c78d65`.
 
 ## O que mudou em relação ao Zoom oficial WASM 1.0.0
 
@@ -51,6 +51,8 @@ Base: `mods/official/zoom/src/lib.rs` em `e7614d2` (cópia em
 
 ## Verificação
 
+O build final rodou no **GitHub Actions** (workflow `.github/workflows/build-rust.yml`, run `41549376745`, commit `a2ac892`): `rustup target add wasm32-unknown-unknown` → `cargo build -p zoom --lib --target wasm32-unknown-unknown --release` → `wit_component::ComponentEncoder`. O próprio CI executou `verify` e os 30 testes; ambos foram repetidos localmente depois do `git pull` do artefato.
+
 `node tools/verify.mjs mod.wasm` confirma:
 
 - `horizon:mods@0.1.0` sem imports WASI;
@@ -76,12 +78,13 @@ comandos, persistência e ciclos da UI.
 - `wit/horizon.wit`: cópia integral do WIT em `e7614d2`.
 - `wit/zoom.wit`: mundo `zoom-mod` derivado, com apenas os imports/exports
   usados pelo mod (mesmo pacote `horizon:mods@0.1.0`).
-- `zig/zoom.c`: core WASM freestanding usado para gerar o `mod.wasm` entregue.
+- `zig/zoom.c`: core WASM freestanding mantido como **fallback**; não é mais o `mod.wasm` entregue.
 - `js/zoom.mjs`: implementação JS equivalente para o fallback
   `componentize-js`.
 - `tools/build.sh`: caminho canônico `rustup target add
   wasm32-unknown-unknown` → `cargo build --release` →
   `wit_component::ComponentEncoder`.
+- `.github/workflows/build-rust.yml`: CI que compila em Rust, valida, empacota e commitou o artefato final no branch.
 - `tools/componentize/`: helper Rust com `ComponentEncoder::default()
   .module(core)?.validate(true).encode()?`.
 - `tools/build-core.sh`, `tools/componentize-core.mjs`: build do core C +
@@ -92,21 +95,22 @@ comandos, persistência e ciclos da UI.
 - `reference/e7614d2/`: snapshots de `api_level.rs`, `manifest.rs`,
   `runtime.rs`, Zoom oficial, manifesto/Cargo do exemplo e docs da revisão.
 
-## Sobre a toolchain deste sandbox
+## Build final via GitHub Actions
 
-O sandbox não tinha `rustc`, `cargo`, `rustup` nem o alvo
-`wasm32-unknown-unknown`, e os espelhos normalmente usados para instalar o
-toolchain estavam inacessíveis. Por isso o **`mod.wasm` entregue** foi gerado
-por um core `wasm32-freestanding` (Zig/clang, sem WASI e sem libc) compilado
-de `zig/zoom.c`, depois envolvido por `wit-component` (API
-`componentEmbed`/`componentNew` de `jco-transpile`). O resultado é um
-componente `horizon:mods@0.1.0` com a mesma ABI que o runtime de `e7614d2`
-espera, mas **não é literalmente um `cargo build --target
-wasm32-unknown-unknown`**. O código Rust, o SDK vendorizado, o helper
-`wit_component::ComponentEncoder` e `tools/build.sh` estão incluídos para
-reproduzir o build Rust exato onde a toolchain estiver disponível. O fallback
-`npm run build:js` também gera um componente compatível via
-`componentize-js`, porém com ~12 MB.
+O sandbox local continua sem `rustc`/`cargo`/`rustup`, mas isso **não é mais uma
+ressalva do entregável**: o `mod.wasm` e o zip atuais foram produzidos pelo
+runner `ubuntu-latest` do GitHub Actions, com Rust stable e o alvo
+`wasm32-unknown-unknown`, usando o SDK vendorizado de `e7614d2` e
+`tools/componentize` (`wit_component::ComponentEncoder`). O workflow faz
+`npm ci`, `bash tools/build.sh`, `npm test`, `python3 tools/package.py` e
+commita os dois arquivos no próprio branch com o `GITHUB_TOKEN` (push assim
+não dispara outro run). O WAT do componente contém símbolos `rustc`/`std`/`alloc`,
+confirmando a origem Rust.
+
+`zig/zoom.c` (core C + `wit-component` via `jco-transpile`) e `js/zoom.mjs`
+(`componentize-js`) permanecem no repositório apenas como caminhos alternativos
+reprodutíveis; **não são o binário entregue**. O comando exato do build final é
+`npm run build:rust` / `bash tools/build.sh` onde houver toolchain Rust.
 
 ## Coords HUD
 
@@ -124,10 +128,13 @@ não foi possível comparar o binário do Coords HUD do usuário com este
 
 ```bash
 npm install
-npm run build:core      # gera mod.wasm + zip (core C + wit-component)
 npm run verify          # imports, exports, api_level, ausência de WASI
 npm test                # host simulado, 30 checagens
-npm run build:js        # fallback componentize-js
-bash tools/build.sh     # caminho Rust exato (requer toolchain Rust)
+npm run build:rust      # FINAL: cargo wasm32-unknown-unknown + wit-component
+npm run build:core      # fallback: core C + wit-component
+npm run build:js        # fallback: componentize-js
 python3 tools/package.py
 ```
+
+O mesmo `npm run build:rust` é executado automaticamente no push para
+`arena/5504635e-zoom` e pode ser disparado manualmente pelo workflow.

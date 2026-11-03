@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Horizon WI-Zoom-style WASM component fixed to revision e7614d2 (horizon:mods@0.1.0)",
   "scripts": {
+    "build:rust": "bash tools/build.sh",
     "build:core": "bash tools/build-core.sh",
     "build:js": "node tools/build-componentize-js.mjs",
     "verify": "node tools/verify.mjs mod.wasm",
